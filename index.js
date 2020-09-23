@@ -20,14 +20,22 @@ module.exports = function GCSStore(globalOpts) {
     bucket: "",
     scopes: ["https://www.googleapis.com/auth/devstorage.full_control",],
   });
-  const gcs = storage({
-    projectId: globalOpts.projectId,
-    keyFilename: globalOpts.keyFilename,
-  });
+
+  let gcs;
+
+  if (globalOpts.storage) {
+    gcs = globalOpts.storage;
+  } else {
+    gcs = storage({
+      projectId: globalOpts.projectId,
+      keyFilename: globalOpts.keyFilename,
+    });
+  }
+
   const bucket = gcs.bucket(globalOpts.bucket);
   const adapter = {
     ls: function(dirname, cb) {
-      bucket.getFiles({ prefix: dirname, }, function(err, files) {
+      bucket.getFiles({prefix: dirname,}, function(err, files) {
         if (err) {
           cb(err);
         } else {
@@ -88,7 +96,7 @@ module.exports = function GCSStore(globalOpts) {
         });
         stream.on("finish", function() {
           __newFile.extra = file.metadata;
-          if(globalOpts.public) {
+          if (globalOpts.public) {
             file.makePublic().then(() => {
               __newFile.extra.Location = "https://storage.googleapis.com/" + globalOpts.bucket + "/" + __newFile.fd;
               done();
